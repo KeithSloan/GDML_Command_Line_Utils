@@ -1,9 +1,6 @@
 import sys, os
 from lxml import etree 
 
-positionList = []
-rotationList = []
-
 def checkDirectory(path) :
     if not os.path.exists(path):
        print('Creating Directory : '+path)
@@ -19,17 +16,18 @@ def writeElement(path, sname, type, elem) :
     #docString += '<!ENTITY '+elemName+' SYSTEM "'+elemName+'">\n'
     #gdml.append(etree.Entity(elemName))
 
-
 def processSolid(path, sname) :
    # Passed solid name volume, booleans
    global solidList, solids
-   solid = oldSolids.find(f"*[@name='{sname}']")
+   solid = solids.find(f"*[@name='{sname}']")
    print('Adding : '+sname)
    print(solid.attrib)
    if path is not None :
       writeElement(path, sname, 'solid', solid)
 
-def processPhysVol(path, volasm):
+def processPhysVol(path, vaname, volasm):
+   positionList = []
+   rotationList = []
    for pv in volasm.findall('physvol') :
       volref = pv.find('volumeref')
       pname = volref.attrib.get('ref')
@@ -49,16 +47,23 @@ def processPhysVol(path, volasm):
          rotname = rotref.attrib.get('ref')
          print('Rotation ref : '+rotname)
          if rotname not in rotationList : rotationList.append(rotname)
+   newDefine = etree.SubElement(gdml,'define')
+   for posName in positionList :
+       p = defines.find(f"position[@name='{posName}']")
+       newDefine.append(p)
+   for rotName in rotationList :
+       p = defines.find(f"rotation[@name='{rotName}']")
+       newDefine.append(p)
+   writeElement(path, vaname, 'defines', newDefine)
 
 def processVol(path, vol) :
    global volList, solidList, oldSolids
    print(vol)
    print(vol.attrib)
    # Need to process physvols first
-   processPhysVol(path, vol)
    vname = vol.attrib.get('name')
    print('volume : ' + vname)
-   writeElement(path, vname, 'struct', vol)
+   processPhysVol(path, vname, vol)
    solid = vol.find('solidref')
    sname = solid.attrib.get('ref')
    processSolid(path, sname)
@@ -70,10 +75,11 @@ def processVol(path, vol) :
 def processAssembly(path, assem) :
     aname = assem.attrib.get('name')
     print('Process Assembly ; '+aname)
-    processPhysVol(path, assem)
+    processPhysVol(path, aname, assem)
 
 def processVolAsm(path, vaname) :
     volasm = structure.find(f"*[@name='{vaname}']")
+    writeElement(path, vaname, 'struct', volasm)
     if volasm.tag == 'volume' :
        processVol(path, volasm)
     elif volasm.tag == 'assembly' :
@@ -104,42 +110,15 @@ oName = sys.argv[4]
 
 print('\nExtracting Volume : '+volume+' from : '+iName+' to '+oName)
 checkDirectory(oName)
+path = os.path.join(oName,volume)
+checkDirectory(path)
 tree = etree.parse(iName)
 root = tree.getroot()
 structure = tree.find('structure')
-oldSolids = tree.find('solids')
+solids = tree.find('solids')
+defines = tree.find('define')
 #print(etree.fromstring(structure))
-# Following works
-#vol = structure.find('volume[@name="World"]')
-# Test if Volume
-vol = structure.find(f"volume[@name='{volume}']")
-if vol is not None :
-   processVol(oName, vol)
-else : 
-   # Test if Assembly
-   vol = structure.find(f"assembly[@name='{volume}']")
-   if vol is not None :
-      processAssembly(oName, vol)
-   else :
-      print(volume+' :  Not found as Volume or Assembly')
-      exit(0)
-newDefine = etree.Element('define')
-materials = tree.find('materials')
-newSolids = etree.Element('solids')
-newStructure = etree.Element('structure')
-oldDefine = tree.find('define') 
-oldSolids = tree.find('solids')
-oldVols   = tree.find('structure')
-for posName in positionList :
-    p = oldDefine.find(f"position[@name='{posName}']")
-    newDefine.append(p)
-for rotName in rotationList :
-    p = oldDefine.find(f"rotation[@name='{rotName}']")
-    newDefine.append(p)
-print('Position List')
-print(positionList)
-print('Rotation List')
-print(rotationList)
+processVolAsm(path, volume)
 #setup = etree.Element('setup', {'name':'Default', 'version':'1.0'})
 #etree.SubElement(setup,'world', { 'ref' : volList[-1]})
 
