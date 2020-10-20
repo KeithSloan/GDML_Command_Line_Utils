@@ -36,7 +36,7 @@ python3 listVols <input_file >
 
 ### listSolids.py
 
-List tge solids in a gdml file
+List the solids in a gdml file
 
 #### syntax
 
