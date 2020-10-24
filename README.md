@@ -12,7 +12,7 @@ Extracts a volume or assembly from a gdml file and creates a directory which con
  * structute
  * setup
  
- and a gedml file with includes for the above
+ and a gdml file with includes for the above
  
  #### syntax
  
@@ -36,7 +36,7 @@ python3 listVols <input_file >
 
 ### listSolids.py
 
-List tge solids in a gdml file
+List the solids in a gdml file
 
 #### syntax
 
