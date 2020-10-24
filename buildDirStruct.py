@@ -88,8 +88,8 @@ class VolAsm() :
           self.newSolids.append(s)
 
    def processPhysVols(self, lxml, volasm, path) :
-       print('Process Phys Vols')
        vaname = volasm.attrib.get('name')
+       print('Process Phys Vols of : '+vaname)
        for pv in volasm.findall('physvol') :
            volref = pv.find('volumeref')
            pname = volref.attrib.get('ref')
@@ -109,6 +109,8 @@ class VolAsm() :
               rotname = rotref.attrib.get('ref')
               print('Stack Rotation ref : '+rotname)
               if rotname not in self.rotList : self.rotList.append(rotname)
+       print('Number of positions : '+str(len(self.posList)))
+       print(self.posList)
        for posName in self.posList :
            print('Pull Position '+posName)
            p = lxml.getPosition(posName)
