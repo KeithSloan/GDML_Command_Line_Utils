@@ -89,6 +89,7 @@ class VolAsm() :
 
    def processPhysVols(self, lxml, volasm, path) :
        print('Process Phys Vols')
+       vaname = volasm.attrib.get('name')
        for pv in volasm.findall('physvol') :
            volref = pv.find('volumeref')
            pname = volref.attrib.get('ref')
@@ -109,14 +110,14 @@ class VolAsm() :
               print('Stack Rotation ref : '+rotname)
               if rotname not in self.rotList : self.rotList.append(rotname)
        for posName in self.posList :
-           print('Pull Position'+posName)
+           print('Pull Position '+posName)
            p = lxml.getPosition(posName)
            self.addDefine(p)
        for rotName in self.rotList :
            p = lxml.getRotation(rotName)
            self.addDefine(p)
-       writeElement(path, self.vaname, 'defines', self.newDefine)
-       writeElement(path, self.vaname, 'solids', self.newSolids)
+       writeElement(path, vaname, 'defines', self.newDefine)
+       writeElement(path, vaname, 'solids', self.newSolids)
   
    def processVolume(self, lxml, path, vol) :
        print('Process Volume')
@@ -125,8 +126,7 @@ class VolAsm() :
        # Need to process physvols first
        vname = vol.attrib.get('name')
        print('volume : ' + vname)
-       volasm = lxml.getVolAsm(vname)
-       self.processPhysVols(lxml, volasm, path)
+       self.processPhysVols(lxml, vol, path)
        solid = vol.find('solidref')
        sname = solid.attrib.get('ref')
        self.processSolid(lxml, sname)
@@ -135,7 +135,7 @@ class VolAsm() :
           #print('material : '+str(material.attrib))
           print('material : ' + material.attrib.get('ref'))
        materials = lxml.getMaterials()
-       writeElement(path, self.vaname, 'materials', materials)
+       writeElement(path, vname, 'materials', materials)
 
    def processAssembly(self, lxml, path, assem) :
        aname = assem.attrib.get('name')
@@ -147,7 +147,7 @@ class VolAsm() :
        volasm = lxml.getVolAsm(vaname)
        print(volasm)
        print(str(volasm))
-       writeElement(path, self.vaname, 'struct', volasm)
+       writeElement(path, vaname, 'struct', volasm)
        if volasm.tag == 'volume' :
           self.processVolume(lxml, path, volasm)
        elif volasm.tag == 'assembly' :
