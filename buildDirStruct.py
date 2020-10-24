@@ -52,12 +52,10 @@ class gdml_lxml() :
 
 class VolAsm() :
 
-   def __init__(self, lxml, vaname) :
+   def __init__(self, vaname) :
        from lxml import etree
 
-       self.lxml      = lxml
        self.vaname    = vaname
-       self.volasm    = self.lxml.getVolAsm(vaname) 
        NS = 'http://www.w3.org/2001/XMLSchema-instance'
        location_attribute = '{%s}noNameSpaceSchemaLocation' % NS
        self.gdml = etree.Element('gdml',attrib={location_attribute: \
@@ -71,87 +69,89 @@ class VolAsm() :
    def addDefine(self, d) :
        self.newDefine.append(d)
   
-   def processPosition(self,posName) :
+   def processPosition(self, lxml, posName) :
        if posName not in self.posList :
           self.posList.append(posName)
-          p = self.lxml.getPosition(posName)
+          p = lxml.getPosition(posName)
           self.newDefine.append(p)
 
-   def processRotation(self,rotName) :
+   def processRotation(self,lxml, rotName) :
        if rotName not in self.rotList :
           self.rotList.append(rotName)
-          p = self.ilxml.getPosition(rotName)
+          p = lxml.getPosition(rotName)
           self.newDefine.append(p)
    
-   def processSolid(self, sname) :
+   def processSolid(self, lxml, sname) :
        if sname not in self.solidList :
           self.solidList.append(sname)
-          s = self.lxml.getSolid(sname)
+          s = lxml.getSolid(sname)
           self.newSolids.append(s)
 
-   def processPhysVols(self, path) :
+   def processPhysVols(self, lxml, volasm, path) :
        print('Process Phys Vols')
-       for pv in self.volasm.findall('physvol') :
+       for pv in volasm.findall('physvol') :
            volref = pv.find('volumeref')
            pname = volref.attrib.get('ref')
            print('physvol : '+pname)
            npath = os.path.join(path,pname)
            print('New path : '+npath)
            checkDirectory(npath)
-           processVolAsm(npath, pname)
+           self.processVolAsm(lxml, npath, pname)
            posref = pv.find('positionref')
            if posref is not None :
               posname = posref.attrib.get('ref')
-              print('Position ref : '+posname)
-           if posname not in self.posList :
-              self.posList.append(posname)
-              rotref = pv.find('rotationref')
+              print('Stack Position ref : '+posname)
+              if posname not in self.posList :
+                 self.posList.append(posname)
+           rotref = pv.find('rotationref')
            if rotref is not None :
               rotname = rotref.attrib.get('ref')
-              print('Rotation ref : '+rotname)
+              print('Stack Rotation ref : '+rotname)
               if rotname not in self.rotList : self.rotList.append(rotname)
        for posName in self.posList :
-           p = self.lxml.getPosition(posName)
+           print('Pull Position'+posName)
+           p = lxml.getPosition(posName)
            self.addDefine(p)
        for rotName in self.rotList :
-           p = self.lxml.getRotation(rotName)
+           p = lxml.getRotation(rotName)
            self.addDefine(p)
        writeElement(path, self.vaname, 'defines', self.newDefine)
        writeElement(path, self.vaname, 'solids', self.newSolids)
   
-   def processVolume(self,path, vol) :
+   def processVolume(self, lxml, path, vol) :
        print('Process Volume')
        print(vol)
        print(vol.attrib)
        # Need to process physvols first
        vname = vol.attrib.get('name')
        print('volume : ' + vname)
-       self.processPhysVols(path)
+       volasm = lxml.getVolAsm(vname)
+       self.processPhysVols(lxml, volasm, path)
        solid = vol.find('solidref')
        sname = solid.attrib.get('ref')
-       self.processSolid(sname)
+       self.processSolid(lxml, sname)
        material = vol.find('materialref')
        if material is not None :
           #print('material : '+str(material.attrib))
           print('material : ' + material.attrib.get('ref'))
-       materials = self.lxml.getMaterials()
+       materials = lxml.getMaterials()
        writeElement(path, self.vaname, 'materials', materials)
 
-   def processAssembly(self,path,assem) :
+   def processAssembly(self, lxml, path, assem) :
        aname = assem.attrib.get('name')
        print('Process Assembly ; '+aname)
-       self.processPhysVols(path)
+       self.processPhysVols(lxml, assem, path)
 
-   def processVolAsm(self,path) :
-       print('Processing VolAsm : '+self.vaname)
-       volasm = self.lxml.getVolAsm(self.vaname)
+   def processVolAsm(self, lxml, path, vaname) :
+       print('Processing VolAsm : '+vaname)
+       volasm = lxml.getVolAsm(vaname)
        print(volasm)
        print(str(volasm))
        writeElement(path, self.vaname, 'struct', volasm)
        if volasm.tag == 'volume' :
-          self.processVolume(path, volasm)
+          self.processVolume(lxml, path, volasm)
        elif volasm.tag == 'assembly' :
-          self.processAssembly(path, volasm)
+          self.processAssembly(lxml, path, volasm)
        else :
           print('Not Volume or Assembly : '+volasm.tag)
 
@@ -167,36 +167,6 @@ def writeElement(path, sname, type, elem) :
     fpath = os.path.join(path,sname+'_'+type)
     print('writing file : '+fpath)
     etree.ElementTree(elem).write(fpath)
-
-def processVol(path, vol) :
-    print(vol)
-    print(vol.attrib)
-    # Need to process physvols first
-    vname = vol.attrib.get('name')
-    print('volume : ' + vname)
-    #processPhysVol(path, vname, vol)
-    solid = vol.find('solidref')
-    sname = solid.attrib.get('ref')
-    processSolid(path, sname)
-    material = vol.find('materialref')
-    if material is not None :
-       #print('material : '+str(material.attrib))
-       print('material : ' + material.attrib.get('ref'))
-
-def processAssembly(path, assem) :
-    aname = assem.attrib.get('name')
-    print('Process Assembly ; '+aname)
-    #self.processPhysVol(path, aname, assem)
-
-def processVolAsm(gdml, path, vaname) :
-    volasm = getVolAsm(gdml,vaname)
-    writeElement(path, vaname, 'struct', volasm)
-    if volasm.tag == 'volume' :
-       processVol(path, volasm)
-    elif volasm.tag == 'assembly' :
-       processAssembly(path, volasm)
-    else :
-       print('Not Volume or Assembly : '+volasm.tag)
 
 def exportElement(dirPath, elemName, elem) :
     import os
@@ -222,7 +192,7 @@ checkDirectory(oName)
 path = os.path.join(oName,vName)
 checkDirectory(path)
 lxml = gdml_lxml(iName)
-volasm = VolAsm(lxml,vName)
-volasm.processVolAsm(path)
+volasm = VolAsm(vName)
+volasm.processVolAsm(lxml, path, vName)
 #setup = etree.Element('setup', {'name':'Default', 'version':'1.0'})
 #etree.SubElement(setup,'world', { 'ref' : volList[-1]})
