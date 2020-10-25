@@ -1,12 +1,21 @@
 import sys
 # add folder containing FreeCAD.pyd, FreeCADGui.pyd to sys.path
 #sys.path.append("C:/Program Files/FreeCAD 0.18/bin") # example for Windows
-sys.path.append("/usr/lib/freecad-daily/lib") # example for Linux
-sys.path.append("/usr/lib/freecad-daily/Mod") # example for Linux
+#sys.path.append("/usr/lib/freecad-daily/lib") # example for Linux
+#sys.path.append("/usr/lib/freecad-daily/Mod") # example for Linux
 #sys.path.append("/usr/lib/freecad/lib") # example for Linux
-import FreeCAD
+sys.path.append("/Applications/FreeCAD_0.19-B.app/Contents/Resources/lib")
+sys.path.append("/Applications/FreeCAD_0.19-B.app/Contents/Resources/lib/python3.8/site-packages") # example for Mac OS
+
+print(sys.path)
+try :
+  import FreeCAD
+except :
+  print("FreeCAD module not found - Update the sys.path.append in this script")
+  exit(0)
 import FreeCADGui
 import Part
+#import PySide2
 import Draft
 import Import
 
