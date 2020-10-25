@@ -72,6 +72,7 @@ class VolAsm() :
           self.newDefine.append(d)
        else :
           print('==== Problem with define')
+          exit(1)
   
    def processPosition(self, lxml, posName) :
        if posName not in self.posList :
@@ -89,7 +90,11 @@ class VolAsm() :
        if sname not in self.solidList :
           self.solidList.append(sname)
           s = lxml.getSolid(sname)
-          self.newSolids.append(s)
+          if s is not None :
+             self.newSolids.append(s)
+          else :
+             print('Solid : '+sname+' Not Found')
+             exit(1)
 
    def processPhysVols(self, lxml, volasm, path) :
        vaname = volasm.attrib.get('name')
@@ -136,6 +141,7 @@ class VolAsm() :
        self.processPhysVols(lxml, vol, path)
        solid = vol.find('solidref')
        sname = solid.attrib.get('ref')
+       print('Process Solid : '+sname)
        self.processSolid(lxml, sname)
        material = vol.find('materialref')
        if material is not None :
