@@ -6,10 +6,11 @@ class gdml_lxml() :
       try:
          from lxml import etree
          print('Running with lxml.etree\n')
+         print(filename)
          parser = etree.XMLParser(resolve_entities=True)
          self.root = etree.parse(filename, parser=parser)
 
-      except :
+      except ImportError :
          try :
              import xml.etree.ElementTree as etree
              print("Rnning with etree.ElementTree (import limitations)\n")
@@ -67,7 +68,10 @@ class VolAsm() :
        self.solidList = []
 
    def addDefine(self, d) :
-       self.newDefine.append(d)
+       if d is not None  :
+          self.newDefine.append(d)
+       else :
+          print('==== Problem with define')
   
    def processPosition(self, lxml, posName) :
        if posName not in self.posList :
@@ -97,7 +101,8 @@ class VolAsm() :
            npath = os.path.join(path,pname)
            print('New path : '+npath)
            checkDirectory(npath)
-           self.processVolAsm(lxml, npath, pname)
+           new_pa = VolAsm(pname)
+           new_pa.processVolAsm(lxml, npath, pname)
            posref = pv.find('positionref')
            if posref is not None :
               posname = posref.attrib.get('ref')
@@ -109,7 +114,7 @@ class VolAsm() :
               rotname = rotref.attrib.get('ref')
               print('Stack Rotation ref : '+rotname)
               if rotname not in self.rotList : self.rotList.append(rotname)
-       print('Number of positions : '+str(len(self.posList)))
+       print('Number of positions in : '+vaname+' : '+str(len(self.posList)))
        print(self.posList)
        for posName in self.posList :
            print('Pull Position '+posName)
@@ -149,14 +154,16 @@ class VolAsm() :
        volasm = lxml.getVolAsm(vaname)
        print(volasm)
        print(str(volasm))
-       writeElement(path, vaname, 'struct', volasm)
-       if volasm.tag == 'volume' :
-          self.processVolume(lxml, path, volasm)
-       elif volasm.tag == 'assembly' :
-          self.processAssembly(lxml, path, volasm)
+       if volasm is not None :
+          writeElement(path, vaname, 'struct', volasm)
+          if volasm.tag == 'volume' :
+             self.processVolume(lxml, path, volasm)
+          elif volasm.tag == 'assembly' :
+             self.processAssembly(lxml, path, volasm)
+          else :
+             print('Not Volume or Assembly : '+volasm.tag)
        else :
-          print('Not Volume or Assembly : '+volasm.tag)
-
+          print(vaname+ ' : Not Found')
 
 def checkDirectory(path) :
     if not os.path.exists(path):
