@@ -85,7 +85,10 @@ class VolAsm() :
           self.rotList.append(rotName)
           p = lxml.getPosition(rotName)
           self.newDefine.append(p)
-   
+ 
+   def appendSolid(self, sname) :
+       self.newSolids.append(sname)
+     
    def processSolid(self, lxml, sname) :
        if sname not in self.solidList :
           self.solidList.append(sname)
@@ -98,6 +101,7 @@ class VolAsm() :
 
    def processPhysVols(self, lxml, volasm, path) :
        vaname = volasm.attrib.get('name')
+       solids = []
        print('Process Phys Vols of : '+vaname)
        for pv in volasm.findall('physvol') :
            volref = pv.find('volumeref')
@@ -107,7 +111,9 @@ class VolAsm() :
            print('New path : '+npath)
            checkDirectory(npath)
            new_pa = VolAsm(pname)
-           new_pa.processVolAsm(lxml, npath, pname)
+           new_solids = new_pa.processVolAsm(lxml, npath, pname)
+           print('New solids : '+str(new_solids))
+           solids = solids + new_solids
            posref = pv.find('positionref')
            if posref is not None :
               posname = posref.attrib.get('ref')
@@ -129,31 +135,37 @@ class VolAsm() :
            p = lxml.getRotation(rotName)
            self.addDefine(p)
        writeElement(path, vaname, 'defines', self.newDefine)
-       writeElement(path, vaname, 'solids', self.newSolids)
+       #writeElement(path, vaname, 'solids', self.newSolids)
+       print('PhysVols : '+str(solids))
+       return solids
   
    def processVolume(self, lxml, path, vol) :
+       # return solid
        print('Process Volume')
        print(vol)
        print(vol.attrib)
        # Need to process physvols first
        vname = vol.attrib.get('name')
        print('volume : ' + vname)
-       self.processPhysVols(lxml, vol, path)
+       solids = self.processPhysVols(lxml, vol, path)
        solid = vol.find('solidref')
        sname = solid.attrib.get('ref')
-       print('Process Solid : '+sname)
-       self.processSolid(lxml, sname)
+       solids.append(sname)
+       #print('Process Solid : '+sname)
+       #self.processSolid(lxml, sname)
        material = vol.find('materialref')
        if material is not None :
           #print('material : '+str(material.attrib))
           print('material : ' + material.attrib.get('ref'))
        materials = lxml.getMaterials()
        writeElement(path, vname, 'materials', materials)
+       print('Solids in : '+vname+' : '+str(solids))
+       return solids
 
    def processAssembly(self, lxml, path, assem) :
        aname = assem.attrib.get('name')
        print('Process Assembly ; '+aname)
-       self.processPhysVols(lxml, assem, path)
+       return self.processPhysVols(lxml, assem, path)
 
    def processVolAsm(self, lxml, path, vaname) :
        print('Processing VolAsm : '+vaname)
@@ -163,11 +175,25 @@ class VolAsm() :
        if volasm is not None :
           writeElement(path, vaname, 'struct', volasm)
           if volasm.tag == 'volume' :
-             self.processVolume(lxml, path, volasm)
+             solids = self.processVolume(lxml, path, volasm)
           elif volasm.tag == 'assembly' :
-             self.processAssembly(lxml, path, volasm)
+             solids = self.processAssembly(lxml, path, volasm)
           else :
              print('Not Volume or Assembly : '+volasm.tag)
+          if solids is not None :
+             print('Deal with solids')
+             print(solids)
+             for sname in solids :
+                 if sname not in self.solidList :
+                    self.solidList.append(sname)
+                    s = lxml.getSolid(sname)
+                    if s is not None :
+                       self.appendSolid(s)
+                    else :
+                       print('Solid : '+sname+' Not Found')
+                       exit(1)
+             writeElement(path, vaname, 'solids', self.newSolids)
+             return solids
        else :
           print(vaname+ ' : Not Found')
 
