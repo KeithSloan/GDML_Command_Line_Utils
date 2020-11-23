@@ -125,7 +125,21 @@ class VolAsm() :
            if rotref is not None :
               rotname = rotref.attrib.get('ref')
               self.rotStack.append(rotname)
-       self.processVolAsms(lxml)
+           print('Processing sub volume : '+pname)
+           subvol = VolAsm(pname)
+           nv, ns, np, nr = subvol.processVolAsm(lxml,path, pname)
+           print('Return from sub Volume')
+           print(nv)
+           self.volStack   += nv
+           self.solidStack += ns
+           self.posStack   += np
+           self.rotStack   += nr 
+       print('Length of VolAsm Stack   in : '+vaname+' : ' \
+               +str(len(self.volStack)))
+       print(self.volStack)
+       print('Length of Solid Stack    in : '+vaname+' : ' \
+               +str(len(self.solidStack)))
+       print(self.solidStack)
        print('Length of Position Stack in : '+vaname+' : ' \
                +str(len(self.posStack)))
        #print(self.getSet(self.posStack))
@@ -138,7 +152,7 @@ class VolAsm() :
        #writeElement(path, vaname, 'defines', self.newDefine)
        #writeElement(path, vaname, 'solids', self.newSolids)
        #print('PhysVols : '+str(self.solidStack))
-       return self.solidStack, self.posStack, self.rotStack
+       return self.volStack, self.solidStack, self.posStack, self.rotStack
   
    def processVolume(self, lxml, path, vol) :
        # return solid
@@ -164,51 +178,62 @@ class VolAsm() :
        print('Solids in : '+vname+' : '+str(self.solidStack))
        return self.solidStack, self.posStack, self.rotStack
 
-   def processAssembly(self, lxml, path, assem) :
-       aname = assem.attrib.get('name')
-       print('Process Assembly ; '+aname)
-       self.processPhysVols(lxml, assem, path)
-       #ns, np, nr = self.processPhysVols(lxml, assem, path)
-       #self.solidStack += ns
-       #self.posStack += np
-       #self.rotStack += nr 
-       return self.solidStack, self.posStack, self.rotStack
+   def exportVolAsm(self, lxml, path, vaname) :
+       print('Export VolAsm : '+vaname)
+       print('Path : '+path)
 
    def processVolAsm(self, lxml, path, vaname) :
        print('Processing VolAsm : '+vaname)
        volasm = lxml.getVolAsm(vaname)
-       print(volasm)
-       print(str(volasm))
        if volasm is not None :
-          writeElement(path, vaname, 'struct', volasm)
-          if volasm.tag == 'volume' :
-             ns, np, nr = self.processVolume(lxml, path, volasm)
-          elif volasm.tag == 'assembly' :
-             ns, np, nr = self.processAssembly(lxml, path, volasm)
-          else :
-             print('Not Volume or Assembly : '+volasm.tag)
-             exit(3)
+          if volasm.tag == 'volume' : 
+             solid = volasm.find('solidref')
+             sname = solid.attrib.get('ref')
+             self.solidStack.append(sname)
+          nv, ns, np, nr = self.processPhysVols(lxml, volasm, path)
+          self.volStack   += nv
+          self.solidStack += ns
+          self.posStack   += np
+          self.rotStack   += nr 
+          # Okay Now process Stacks
+          if len(self.volStack) > 0 :
+             volSet = self.getSet(self.volStack)
+             print('VolAsm Set')
+             print(volSet)
+             for vol in volSet :
+                 self.exportVolAsm(lxml, path, vaname)
 
-          if ns is not None :
-             print('Deal with solids')
-             print(ns)
-             #self.solidStack += ns
-             self.processSolids(lxml)
+       #print(str(volasm))
+       #if volasm is not None :
+       #   writeElement(path, vaname, 'struct', volasm)
+       #   if volasm.tag == 'volume' :
+       #      ns, np, nr = self.processVolume(lxml, path, volasm)
+       #   elif volasm.tag == 'assembly' :
+       #      ns, np, nr = self.processAssembly(lxml, path, volasm)
+       #   else :
+       #      print('Not Volume or Assembly : '+volasm.tag)
+       #      exit(3)
 
-          if np is not None :
-             print('Deal with Positions')
-             print(np)
-             #self.posStack += np
-             self.processPositions(lxml)
+       #   if ns is not None :
+       #      print('Deal with solids')
+       #      print(ns)
+       #      #self.solidStack += ns
+       #      self.processSolids(lxml)
 
-          if nr is not None :
-             print('Deal with Rotations')
-             print(nr)
-             #self.rotStack += nr
-             self.processRotations(lxml)
+       #   if np is not None :
+       #      print('Deal with Positions')
+       #      print(np)
+       #      #self.posStack += np
+       #      self.processPositions(lxml)
 
-             writeElement(path, vaname, 'solids', self.newSolids)
-             return self.solidStack, self.posStack, self.rotStack
+       #   if nr is not None :
+       #      print('Deal with Rotations')
+       #      print(nr)
+       #      #self.rotStack += nr
+       #      self.processRotations(lxml)
+
+       #      writeElement(path, vaname, 'solids', self.newSolids)
+          return self.volStack, self.solidStack, self.posStack, self.rotStack
        else :
           print(vaname+ ' : Not Found')
           exit(3)
