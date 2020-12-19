@@ -34,14 +34,22 @@ class gdml_lxml() :
        return self.define.find(f"rotation[@name='{rotName}']")
 
    def getSolid(self, sname) :
+       import hashlib
+       #sname = 'PUstationUnion'
        print('Get Solid : '+sname)
+       print('root : '+str(hash(self.root)))
+       #self.solids    = self.root.find('solids')
        print(self.solids)
+       print('solids : '+str(hash(self.solids)))
+       #result = hashlib.md5(bytes(self.solids))
+       #print(result.hexdigest())
        #print(etree.tostring(self.solids))
-       solid = self.solids.find(f"*[@name='{sname}']")
-       if solid is not None :
-          print(etree.tostring(solid))
-       else :
-          print(str(solid))
+       solid = self.solids.find(f'*[@name="{sname}"]')
+       #if solid is not None :
+       #   print(etree.tostring(solid))
+       #else :
+       #   print(etree.tostring(self.solids))
+       #   print(str(solid))
        return(solid)
 
    def getMaterials(self) :
@@ -62,6 +70,15 @@ class gdml_lxml() :
        etree.ElementTree(self.gdml).write(os.path.join(path,vname+'.gdml'), \
                doctype=self.docString.encode('UTF-8'))
 
+   def dumpElement(self, elem, path) :
+       es = etree.tostring(elem)
+       fp = open(path,'w')
+       fp.write(str(es))
+   
+   def writeElement(self, elem, path) :
+       etree.ElementTree(elem).write(path, \
+                    doctype=self.docString.encode('UTF-8'))
+ 
 class VolAsm() :
 
    def __init__(self, vaname) :
@@ -129,14 +146,27 @@ class VolAsm() :
               exit(1)
  
    def processSolidsStack(self, lxml) :
-       print('Process Solids')
+       solidSet = self.getSet(self.solidStack)
+       print('Process Solids : len - '+str(len(solidSet)))
        print(self.solidStack)
-       for sname in self.getSet(self.solidStack) :
+       lxml.dumpElement(lxml.solids,'/tmp/solids3')
+       for sname in solidSet :
+          print(sname)
+          print('Len : '+str(len(sname)))
           sol = lxml.getSolid(sname)
+          #sol1 = lxml.getSolid(sname)
+          #if sol1 is None :
+          #   print('second call failed')
+          #else :
+          #   print('second call Okay')
           if sol is not None :
+             print(sol)
              self.newSolids.append(sol)
+             lxml.dumpElement(lxml.solids,'/tmp/solids1')
           else :
              print('Solid : '+sname+' Not Found')
+             lxml.dumpElement(lxml.solids,'/tmp/solids2')
+             #lxml.writeElement(lxml.solids,'/tmp/solids2')
              exit(1)
    
    def processVolAsmStack(self, lxml, vaname) :
@@ -229,8 +259,8 @@ class VolAsm() :
           print('process stacks : '+vaname)
           if len(self.volStack) > 0 :
              self.processVolAsmStack(lxml, vaname)
-          #if len(self.solidStack) > 0 :
-          #   self.processSolidsStack(lxml)
+          if len(self.solidStack) > 0 :
+             self.processSolidsStack(lxml)
           if len(self.posStack) > 0 :
              self.processPositionsStack(lxml)
           if len(self.rotStack) > 0 :
