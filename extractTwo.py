@@ -53,7 +53,7 @@ def processPhysVol(volasm, vname):
       splitCount = int(lpvs / splitSize)
       print(splitCount)
       for r in range(splitCount) :
-          fp = open(os.path.join(oName, 'struct_'+vname+'_'+ \
+          fp = open(os.path.join(oName, vname+'_struct_'+ \
                str(r).zfill(3)),'wb') 
           print('Range start ; '+str(r))
           start = r * splitSize
@@ -65,7 +65,7 @@ def processPhysVol(volasm, vname):
       print(splitRes)
       if splitRes > 0 :
          start = splitCount * splitSize 
-         fp = open(os.path.join(oName, 'struct_'+vname+'_'+ \
+         fp = open(os.path.join(oName, vname+'_struct_'+ \
               str(r+1).zfill(3)),'wb') 
          for i in range(start, start+splitRes) :
               fp.write(etree.tostring(pvs[i]))
