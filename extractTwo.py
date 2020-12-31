@@ -7,11 +7,12 @@ def checkDirectory(path) :
        os.mkdir(path)
 
 class gdmlStacks :
-   def __init__(self, iName) :
-       self.gdml = etree.Element('gdml')
-       self.docString = '\n<!DOCTYPE gdml [\n'
+   def __init__(self, iName, oName) :
        self.tree = etree.parse(iName)
        self.root = self.tree.getroot()
+       self.oName = oName
+       self.gdml = etree.Element('gdml')
+       self.docString = '\n<!DOCTYPE gdml [\n'
        self.structure = self.tree.find('structure')
        self.oldSolids = self.tree.find('solids')
        #print(etree.fromstring(structure))
@@ -47,56 +48,34 @@ class gdmlStacks :
 
    def processPhysVol(self, volasm, vname):
        pvs = volasm.findall('physvol')
-       lpvs = len(pvs)
-       splitSize = 75
-       if lpvs < splitSize :
-          for pv in pvs :
-              volref = pv.find('volumeref')
-              pname = volref.attrib.get('ref')
-              print('physvol : '+pname)
-              processVolAsm(pname)
-              posref = pv.find('positionref')
-              if posref is not None :
-                 posname = posref.attrib.get('ref')
-                 print('Position ref : '+posname)
-              if posname not in positionList : 
-                 positionList.append(posname)
-                 rotref = pv.find('rotationref')
-              if rotref is not None :
-                 rotname = rotref.attrib.get('ref')
-                 print('Rotation ref : '+rotname)
-              if rotname not in rotationList : rotationList.append(rotname)
-       else :
-           oName = sys.argv[4]
-           checkDirectory(oName)
-           print('Split PhysVols : '+str(lpvs))
-           splitCount = int(lpvs / splitSize)
-           print(splitCount)
-           print('SolidList : ')
-           print(self.solidList)
-           for r in range(splitCount) :
-               newvol = vname+'_subvol'+str(r).zfill(3)
-               oDir = os.path.join(oName,newvol)
-               checkDirectory(oDir)
-               #exportSolids(oldSolids,solidList,os.path.join(oDir,vname))
-               fp = open(os.path.join(oDir, newvol+'_structure'),'wb')
-               print('Range start ; '+str(r))
-               start = r * splitSize
-               for i in range(start, start+splitSize) :
-                   fp.write(etree.tostring(pvs[i]))
-               fp.close()
-
-           splitRes = lpvs % splitSize
-           print(splitRes)
-           if splitRes > 0 :
-              newvol = vname+'_subvol'+str(r+1).zfill(3)
-              oDir = os.path.join(oName,newvol)
-              checkDirectory(oDir)
-              fp = open(os.path.join(oDir, newvol+'_structure'),'wb')
-              start = splitCount * splitSize 
-              for i in range(start, start+splitRes) :
-                  fp.write(etree.tostring(pvs[i]))
-              fp.close()
+       splitCount = 0
+       splitSet   = 0
+       splitSize  = 75
+       for pv in pvs :
+           volref = pv.find('volumeref')
+           pname = volref.attrib.get('ref')
+           print('physvol : '+pname)
+           self.processVolAsm(pname)
+           posref = pv.find('positionref')
+           if posref is not None :
+              posname = posref.attrib.get('ref')
+              print('Position ref : '+posname)
+           if posname not in self.positionList : 
+              self.positionList.append(posname)
+           rotref = pv.find('rotationref')
+           if rotref is not None :
+              rotname = rotref.attrib.get('ref')
+              print('Rotation ref : '+rotname)
+           if rotname not in self.rotationList :
+              self.rotationList.append(rotname)
+           splitCount += 1
+           if splitCount == splitSize :
+              newName = vname + '_' +str(splitSet).zfill(3)
+              print('Export gdml and structure : '+newName)
+              self.exportGDML(os.path.join(oName, newName), newName) 
+              print('splitCount : '+str(splitCount))
+              splitCount = 0
+              splitSet +=  1
 
    def processVol(self, vol) :
        print(vol)
@@ -133,6 +112,7 @@ class gdmlStacks :
        # Following works
        #vol = structure.find('volume[@name="World"]')
        # Test if Volume
+       checkDirectory(self.oName)
        vol = self.structure.find(f"volume[@name='{volume}']")
        if vol is not None :
           self.processVol(vol)
@@ -147,11 +127,11 @@ class gdmlStacks :
 
    def processLists(self) :
        for posName in self.positionList :
-           p = oldDefine.find(f"position[@name='{posName}']")
-           newDefine.append(p)
+           p = self.oldDefine.find(f"position[@name='{posName}']")
+           self.newDefine.append(p)
        for rotName in  self.rotationList :
-           p = oldDefine.find(f"rotation[@name='{rotName}']")
-           newDefine.append(p)
+           p = self.oldDefine.find(f"rotation[@name='{rotName}']")
+           self.newDefine.append(p)
        for solidName in self.solidList :
            print('Solid : '+solidName)
            s = self.oldSolids.find(f"*[@name='{solidName}']")
@@ -210,7 +190,7 @@ iName = sys.argv[3]
 oName = sys.argv[4]
 
 print('\nExtracting Volume : '+volume+' from : '+iName+' to '+oName)
-gs = gdmlStacks(iName)
+gs = gdmlStacks(iName, oName)
 gs.process()
 gs.processLists()
 gs.printLists()
