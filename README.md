@@ -16,7 +16,7 @@ Extracts a volume or assembly from a gdml file and creates a directory which con
  
  #### syntax
  
- python3 extract.py <param> <volume/assembly>  <directory_to_be_created>
+ python3 extract.py < parameter > < volume/assembly >  < directory_to_be_created >
   
 ### combineGDML.py
 
@@ -24,7 +24,7 @@ Combines a GDML with includes into a single GDML file
 
 #### syntax
 
-python3 combineGDML.py <input_file > <output_file>
+python3 combineGDML.py < input_file > < output_file >
   
 ### listVols.py
 
@@ -32,7 +32,7 @@ List the volumes and assemblies in a gdml file
 
 #### syntax
 
-python3 listVols <input_file >
+python3 listVols < input_file >
 
 ### listSolids.py
 
@@ -40,5 +40,5 @@ List the solids in a gdml file
 
 #### syntax
 
-python3 listSolids.py <input_file>
+python3 listSolids.py < input_file >
   
