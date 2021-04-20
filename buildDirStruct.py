@@ -1,27 +1,29 @@
 import sys, os
-from lxml import etree
+#from lxml import etree
 
 def appendPath(path, name) :
     return(os.path.join(path,name))
 
 class gdml_lxml() :
    def __init__(self, filename) :
-      try:
-         from lxml import etree
-         print('Running with lxml.etree\n')
-         print(filename)
-         parser = etree.XMLParser(resolve_entities=True)
-         self.root = etree.parse(filename, parser=parser)
+      #try:
+      #   from lxml import etree
+      #   print('Running with lxml.etree\n')
+      #   print(filename)
+      #   parser = etree.XMLParser(resolve_entities=True)
+      #   self.root = etree.parse(filename, parser=parser)
 
-      except ImportError :
-         try :
+      #except ImportError :
+      try :
              import xml.etree.ElementTree as etree
              print("Rnning with etree.ElementTree (import limitations)\n")
              self.tree = etree.parse(filename)
+             print(self.tree)
              self.root = self.tree.getroot()
-         except :
+      except :
              print('No lxml or xml')
 
+      print(self.root)
       self.define    = self.root.find('define')
       self.materials = self.root.find('materials')
       self.solids    = self.root.find('solids')
@@ -82,7 +84,8 @@ class gdml_lxml() :
 class VolAsm() :
 
    def __init__(self, vaname) :
-       from lxml import etree
+       #from lxml import etree
+       from xml import etree
 
        self.vaname    = vaname
        NS = 'http://www.w3.org/2001/XMLSchema-instance'
