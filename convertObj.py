@@ -255,7 +255,7 @@ path, fileExt = os.path.splitext(oPath)
 print('target file extension : '+fileExt)
 if fileExt.lower() == '.gdml':
    convert2GDML(objFp, oPath, tessName, material)
-#elif fileExt.lower() == '.xml':
+# elif fileExt.lower() == '.xml':
 #   convert2XML(objFp, oPath, tessName, material)
 else:
    print('Target path should have File extension of gdml or xml')
